@@ -7,8 +7,6 @@ import os
 import base64
 
 
-user_description = ''
-
 data = [
     {
         "phone_number": "1234567890",
@@ -150,22 +148,25 @@ def register_routes(app):
             if image_data.startswith('data:image'):
                 image_data = image_data.split(',')[1]
 
-            user_description = process_compliment(image_data)            
+            process_compliment(image_data)            
             # Return a success message
-            return jsonify({"message": "Image uploaded successfully", "description": user_description}), 200
+            return jsonify({"message": "Image uploaded successfully"}), 200
 
         except Exception as e:
             return jsonify({"error": str(e)}), 500
         
 
-    @app.route("/get-user-description", methods=["GET"])
+    @app.route("/get-user-description", methods=["POST"])
     def get_user_description() :
         
+        data = request.json
         response = {}
         print("request to fetch user description")
-        response['compliment'] = user_description
+        with open('user_description.txt', 'r') as file:
+            response['compliment'] = file.read()
         try:
-            return jsonify({'mesage': response})
+            print(response)
+            return jsonify({'message': response})
         
         except Exception as e: 
             return jsonify({"error": str(e)}), 500
