@@ -1,4 +1,13 @@
 from flask import request, jsonify
+from google.cloud import storage
+from .final_text import process_document
+from .final_text import process_compliment
+from datetime import datetime
+import os
+import base64
+
+
+user_description = ''
 
 data = [
     {
@@ -95,3 +104,68 @@ def register_routes(app):
             jsonify({"message": "Sorry unable to process your request currently"}),
             200,
         )
+    
+
+    @app.route("/upload-document", methods=["POST"])
+    def upload_image():
+        print("Request for document upload")
+        try:
+            # Get the data from the request
+            data = request.json  # Assuming the image is sent as JSON
+            image_data = data.get('image')
+
+            if not image_data:
+                return jsonify({"error": "No image data provided"}), 400
+            
+            if image_data.startswith('data:image'):
+                image_data = image_data.split(',')[1]
+            
+            process_document(image_data)
+            
+            # Return a success message
+            return jsonify({"message": "Image uploaded successfully"}), 200
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+        
+    
+    def fix_base64_padding(base64_string):
+        """Fix base64 padding if necessary."""
+        padding_needed = len(base64_string) % 4
+        if padding_needed:
+            base64_string += '=' * (4 - padding_needed)
+        return base64_string
+
+    @app.route("/capture-image", methods=["POST"])
+    def capture_image():
+        print("Request for image compliment")
+        try:
+            # Get the data from the request
+            data = request.json  # Assuming the image is sent as JSON
+            image_data = data.get('image')
+
+            if not image_data:
+                return jsonify({"error": "No image data provided"}), 400
+            
+            if image_data.startswith('data:image'):
+                image_data = image_data.split(',')[1]
+
+            user_description = process_compliment(image_data)            
+            # Return a success message
+            return jsonify({"message": "Image uploaded successfully", "description": user_description}), 200
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+        
+
+    @app.route("/get-user-description", methods=["GET"])
+    def get_user_description() :
+        
+        response = {}
+        print("request to fetch user description")
+        response['compliment'] = user_description
+        try:
+            return jsonify({'mesage': response})
+        
+        except Exception as e: 
+            return jsonify({"error": str(e)}), 500
